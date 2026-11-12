@@ -71,6 +71,7 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
     let first = Cell::new(true);
     let d = Dashboard::new(Spec {
         title: "handy's 99n".into(),
+        badge: concat!("v", env!("CARGO_PKG_VERSION")).into(),
         window_class: DASHBOARD_CLASS.into(),
         rows: vec![
             page("Overview"),
