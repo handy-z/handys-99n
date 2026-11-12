@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use handy_sdk::app::self_update::{UpdateStatus, badge_text};
+use handy_sdk::app::self_update::{SelfUpdate, UpdateState};
 use handy_sdk::app::updater_thread::{Updater, status_name, status_tone};
 use handy_sdk::input::key::vk_name;
 use handy_sdk::ui::dashboard::{Dashboard, Spec, check, note, number, page, section, value};
@@ -20,8 +20,7 @@ pub struct DashboardDeps {
     pub engine: Arc<Engine>,
     pub settings: Arc<SettingsStore>,
     pub config_ini: PathBuf,
-    /// what the startup self-update did; None when it did not run
-    pub update: Option<UpdateStatus>,
+    pub update: Arc<SelfUpdate>,
 }
 
 const ID_ON: i32 = 2;
@@ -74,7 +73,7 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
     let first = Cell::new(true);
     let d = Dashboard::new(Spec {
         title: "handy's 99n".into(),
-        badge: badge_text(env!("CARGO_PKG_VERSION"), deps.update),
+        badge: deps.update.badge().text,
         window_class: DASHBOARD_CLASS.into(),
         rows: vec![
             page("Overview"),
@@ -107,6 +106,8 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
     });
     overlay.create();
     d.on_tick(|ui| {
+        let b = deps.update.badge();
+        ui.set_badge(&b.text, b.tone, &b.tip);
         if first.replace(false) {
             // first tick runs right after the window is created
             let mut st = deps.settings.get();
@@ -132,6 +133,16 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
         ui.set_text(ID_GAME, &minigame_text(v.sample.as_ref()));
         ui.set_text(ID_SESSION, &session_text(&v));
         overlay.set(if v.on { "Macro on" } else { "Macro off" }, v.on);
+    });
+    d.on_badge_click(|ui| {
+        if matches!(deps.update.state(), UpdateState::Ready { .. }) && deps.engine.view().on {
+            return ui.flash(); // not while the app is working
+        }
+        if deps.update.request_restart() {
+            ui.close();
+        } else {
+            handy_sdk::ui::open_url(&deps.update.release_url());
+        }
     });
     d.on_check(|_, id, checked| {
         if id == ID_ON {
