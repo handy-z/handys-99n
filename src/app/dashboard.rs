@@ -83,9 +83,9 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
             value(ID_GAME, "Minigame"),
             value(ID_SESSION, "This session"),
             section("Spam"),
-            check(ID_SPAM_E, "Spam E\thold Mouse 4"),
-            check(ID_SPAM_CLICK, "Spam click (F with a sack)\thold Mouse 5"),
-            check(ID_SPAM_F, "Spam F when not over an item\thold G"),
+            check(ID_SPAM_E, "Spam E\thold [Mouse 4]"),
+            check(ID_SPAM_CLICK, "Spam click (F with a sack)\thold [Mouse 5]"),
+            check(ID_SPAM_F, "Spam F when not over an item\thold [G]"),
             page("Settings"),
             section("Fishing timings"),
             number(ID_LEAD, "Latency (ms)", 0, 100),
@@ -117,9 +117,10 @@ pub fn run_dashboard(deps: &DashboardDeps) -> i32 {
         }
         let v = deps.engine.view();
         let status = deps.updater.status();
-        ui.set_status(status_tone(status), status_name(status), &deps.updater.detail());
+        ui.set_status_tip(&deps.updater.detail());
+        ui.set_status(status_tone(status), status_name(status), "");
         let st = deps.settings.get();
-        ui.set_text(ID_ON, &format!("Macro\tpress {}", vk_name(st.toggle_vk)));
+        ui.set_text(ID_ON, &format!("Macro\tpress [{}]", vk_name(st.toggle_vk)));
         ui.set_check(ID_ON, v.on);
         ui.set_check(ID_SPAM_E, st.spam_e);
         ui.set_check(ID_SPAM_CLICK, st.spam_click);
